@@ -43,6 +43,49 @@ local function update_display()
   end
 end
 
+-- Refresh diagnostics for a specific buffer or current buffer
+local function refresh_diagnostics(bufnr)
+  -- Don't refresh if in focus mode (it manages its own display)
+  if focus_mode then
+    return
+  end
+  
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  
+  -- Only refresh if buffer is valid and loaded
+  if not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_buf_is_loaded(bufnr) then
+    return
+  end
+  
+  -- Reapply the diagnostic config
+  local text_severities = {}
+  local line_severities = {}
+
+  for severity, is_text_mode in pairs(state.severity_modes) do
+    if state.severity_enabled[severity] then
+      if is_text_mode then
+        table.insert(text_severities, severity)
+      else
+        table.insert(line_severities, severity)
+      end
+    end
+  end
+
+  vim.diagnostic.config({
+    underline = true,
+    virtual_text = #text_severities > 0 and {
+      severity = text_severities,
+    } or false,
+    virtual_lines = #line_severities > 0 and {
+      severity = line_severities,
+    } or false,
+  })
+  
+  -- Refresh the specific buffer
+  vim.diagnostic.hide(nil, bufnr)
+  vim.diagnostic.show(nil, bufnr)
+end
+
 -- Focus mode functions
 local function update_focus_diagnostics()
   if not focus_mode then
@@ -262,6 +305,17 @@ function M.setup(opts)
     update_display()
   end
   
+  -- Setup autocmd to refresh diagnostics when entering buffers
+  vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
+    callback = function(args)
+      -- Small delay to ensure other plugins have applied their configs first
+      vim.defer_fn(function()
+        refresh_diagnostics(args.buf)
+      end, 50)
+    end,
+    desc = "Refresh xray diagnostics on buffer enter",
+  })
+  
   -- Setup keymaps
   local wk = require("which-key")
   wk.add({
@@ -276,6 +330,7 @@ function M.setup(opts)
     { "glsh", toggle_severity(vim.diagnostic.severity.HINT, "HINT"), desc = "Toggle hint display mode" },
     { "glsc", reset_to_default, desc = "Reset all to virtual text" },
     { "glsf", toggle_focus_default, desc = "Toggle focus mode as default on startup" },
+    { "glr", function() refresh_diagnostics() end, desc = "Refresh diagnostics for current buffer" },
   })
 end
 

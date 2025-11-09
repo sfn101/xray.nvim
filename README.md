@@ -105,6 +105,12 @@ All keymaps use the `gl` prefix by default (customizable via `keymap_prefix` opt
 | `glf` | Toggle focus mode (show diagnostics only on current line) |
 | `glsf` | Toggle focus mode as default on startup (persisted) |
 
+#### Refresh
+
+| Key | Action |
+|-----|--------|
+| `glr` | Manually refresh diagnostics for current buffer |
+
 ### Display Modes Explained
 
 **Virtual Text Mode** (default):
@@ -161,6 +167,15 @@ All settings are automatically saved to `~/.local/share/nvim/xray_state.json` an
 
 Press `glsc` to reset all severities to default virtual text mode
 
+### Refresh Diagnostics
+
+Press `glr` to manually refresh diagnostics for the current buffer. This is useful if:
+- Another plugin's config is interfering with xray settings
+- Diagnostics appear duplicated or glitchy
+- You want to force-reapply xray's configuration
+
+**Note**: xray automatically refreshes diagnostics when you open or switch to a buffer, so manual refresh is rarely needed.
+
 ## How It Works
 
 ### Architecture
@@ -177,6 +192,15 @@ Focus mode uses a custom namespace to display filtered diagnostics:
 2. Custom namespace is configured with same display settings
 3. CursorMoved/CursorMovedI autocmds update filtered diagnostics
 4. Only diagnostics on current line are shown in custom namespace
+
+### Automatic Refresh on Buffer Enter
+
+xray automatically refreshes diagnostics when you enter a buffer to ensure:
+- xray's configuration takes precedence over other plugins
+- No duplicate or conflicting diagnostic displays
+- Consistent behavior across all buffers
+
+The refresh happens with a 50ms delay to allow other plugins (like LazyVim) to apply their configs first, then xray overrides with your preferred settings.
 
 ### State Management
 
