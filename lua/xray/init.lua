@@ -43,9 +43,36 @@ local function update_display()
   end
 end
 
--- Refresh diagnostics for a specific buffer or current buffer
-local function refresh_diagnostics(bufnr)
-  -- Don't refresh if in focus mode (it manages its own display)
+-- Focus mode update function (defined early for use by refresh functions)
+local function update_focus_diagnostics()
+  if not focus_mode then
+    return
+  end
+  
+  local bufnr = vim.api.nvim_get_current_buf()
+  local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+  
+  -- Get all diagnostics for current buffer
+  local all_diagnostics = vim.diagnostic.get(bufnr)
+  
+  -- Filter diagnostics for current line only, respecting enabled state
+  local line_diagnostics = {}
+  for _, diagnostic in ipairs(all_diagnostics) do
+    if diagnostic.lnum == line and state.severity_enabled[diagnostic.severity] then
+      table.insert(line_diagnostics, diagnostic)
+    end
+  end
+  
+  -- Clear previous focus diagnostics and show only current line
+  vim.diagnostic.reset(focus_namespace, bufnr)
+  if #line_diagnostics > 0 then
+    vim.diagnostic.set(focus_namespace, bufnr, line_diagnostics, {})
+  end
+end
+
+-- Internal refresh function (skips focus mode for auto-refresh)
+local function refresh_diagnostics_internal(bufnr)
+  -- Skip if in focus mode (auto-refresh shouldn't interfere)
   if focus_mode then
     return
   end
@@ -86,33 +113,28 @@ local function refresh_diagnostics(bufnr)
   vim.diagnostic.show(nil, bufnr)
 end
 
--- Focus mode functions
-local function update_focus_diagnostics()
-  if not focus_mode then
+-- Public refresh function (works in focus mode too)
+local function refresh_diagnostics(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  
+  -- Only refresh if buffer is valid and loaded
+  if not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_buf_is_loaded(bufnr) then
     return
   end
   
-  local bufnr = vim.api.nvim_get_current_buf()
-  local line = vim.api.nvim_win_get_cursor(0)[1] - 1
-  
-  -- Get all diagnostics for current buffer
-  local all_diagnostics = vim.diagnostic.get(bufnr)
-  
-  -- Filter diagnostics for current line only, respecting enabled state
-  local line_diagnostics = {}
-  for _, diagnostic in ipairs(all_diagnostics) do
-    if diagnostic.lnum == line and state.severity_enabled[diagnostic.severity] then
-      table.insert(line_diagnostics, diagnostic)
-    end
+  -- If in focus mode, refresh the focus display
+  if focus_mode then
+    update_focus_diagnostics()
+    print("Refreshed focus mode diagnostics")
+    return
   end
   
-  -- Clear previous focus diagnostics and show only current line
-  vim.diagnostic.reset(focus_namespace, bufnr)
-  if #line_diagnostics > 0 then
-    vim.diagnostic.set(focus_namespace, bufnr, line_diagnostics, {})
-  end
+  -- Otherwise do normal refresh
+  refresh_diagnostics_internal(bufnr)
+  print("Refreshed diagnostics for buffer " .. bufnr)
 end
 
+-- Focus mode functions
 local function exit_focus_mode()
   if not focus_mode then
     return
@@ -310,7 +332,7 @@ function M.setup(opts)
     callback = function(args)
       -- Small delay to ensure other plugins have applied their configs first
       vim.defer_fn(function()
-        refresh_diagnostics(args.buf)
+        refresh_diagnostics_internal(args.buf)
       end, 50)
     end,
     desc = "Refresh xray diagnostics on buffer enter",
