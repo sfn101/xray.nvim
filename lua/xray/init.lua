@@ -255,14 +255,12 @@ function M.setup(opts)
   config.setup(opts)
   state.load()
   
-  -- Apply loaded state on startup with delay to ensure LSP is ready
-  vim.defer_fn(function()
-    if state.focus_default then
-      toggle_focus_mode()
-    else
-      update_display()
-    end
-  end, 100) -- 100ms delay
+  -- Apply loaded state immediately to prevent other plugins from overriding
+  if state.focus_default then
+    toggle_focus_mode()
+  else
+    update_display()
+  end
   
   -- Setup keymaps
   local wk = require("which-key")
