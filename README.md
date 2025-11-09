@@ -22,7 +22,7 @@ A sophisticated Neovim plugin for managing LSP diagnostic display with per-sever
 
 ```lua
 {
-  "yourusername/xray.nvim",
+  "sfn101/xray.nvim",
   dependencies = {
     "folke/which-key.nvim",
   },
@@ -36,7 +36,7 @@ A sophisticated Neovim plugin for managing LSP diagnostic display with per-sever
 
 ```lua
 use {
-  "yourusername/xray.nvim",
+  "sfn101/xray.nvim",
   requires = { "folke/which-key.nvim" },
   config = function()
     require("xray").setup()
