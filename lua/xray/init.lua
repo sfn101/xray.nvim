@@ -64,10 +64,32 @@ local function update_focus_diagnostics()
   end
   
   -- Clear previous focus diagnostics and show only current line
+  vim.diagnostic.hide(nil, bufnr)
   vim.diagnostic.reset(focus_namespace, bufnr)
   if #line_diagnostics > 0 then
     vim.diagnostic.set(focus_namespace, bufnr, line_diagnostics, {})
   end
+end
+
+-- Public refresh function (works in focus mode too)
+local function refresh_diagnostics(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  
+  -- Only refresh if buffer is valid and loaded
+  if not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_buf_is_loaded(bufnr) then
+    return
+  end
+  
+  -- If in focus mode, refresh the focus display
+  if focus_mode then
+    update_focus_diagnostics()
+    print("Refreshed focus mode diagnostics")
+    return
+  end
+  
+  -- Otherwise do normal refresh
+  refresh_diagnostics_internal(bufnr)
+  print("Refreshed diagnostics for buffer " .. bufnr)
 end
 
 -- Internal refresh function (skips focus mode for auto-refresh)
@@ -111,27 +133,6 @@ local function refresh_diagnostics_internal(bufnr)
   -- Refresh the specific buffer
   vim.diagnostic.hide(nil, bufnr)
   vim.diagnostic.show(nil, bufnr)
-end
-
--- Public refresh function (works in focus mode too)
-local function refresh_diagnostics(bufnr)
-  bufnr = bufnr or vim.api.nvim_get_current_buf()
-  
-  -- Only refresh if buffer is valid and loaded
-  if not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_buf_is_loaded(bufnr) then
-    return
-  end
-  
-  -- If in focus mode, refresh the focus display
-  if focus_mode then
-    update_focus_diagnostics()
-    print("Refreshed focus mode diagnostics")
-    return
-  end
-  
-  -- Otherwise do normal refresh
-  refresh_diagnostics_internal(bufnr)
-  print("Refreshed diagnostics for buffer " .. bufnr)
 end
 
 -- Focus mode functions
@@ -200,6 +201,7 @@ local function toggle_focus_mode()
     
     -- Initial update
     update_focus_diagnostics()
+    refresh_diagnostics()
     print("Focus mode: ON (showing diagnostics only on current line)")
   else
     -- Disable focus mode
@@ -207,6 +209,7 @@ local function toggle_focus_mode()
     
     -- Restore normal display
     update_display()
+    refresh_diagnostics()
     print("Focus mode: OFF")
   end
 end
