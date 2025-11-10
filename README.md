@@ -2,6 +2,12 @@
 
 A sophisticated Neovim plugin for managing LSP diagnostic display with per-severity control, multiple display modes, and focus capabilities.
 
+
+https://github.com/user-attachments/assets/8cf8ce89-f623-4a3e-8067-ec185aecee32
+
+
+
+
 ## Features
 
 - **Per-severity control**: Toggle ERROR, WARN, INFO, and HINT diagnostics independently
