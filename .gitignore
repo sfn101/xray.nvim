@@ -3,3 +3,5 @@
 *.swo
 *~
 .DS_Store
+xray.nvim.backup_working/
+xray.nvim.prev_bad/
